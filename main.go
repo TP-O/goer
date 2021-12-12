@@ -3,8 +3,13 @@ package main
 import (
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"time"
+
+	"github.com/withmandala/go-log"
 )
+
+var logger = log.New(os.Stderr)
 
 func main() {
 	var client Client
