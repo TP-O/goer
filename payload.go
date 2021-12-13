@@ -14,11 +14,15 @@ type Credentials struct {
 	Password string
 }
 
+type PayloadGeneratorInterface interface {
+	LoginPayload() Payload
+}
+
 type PayloadGenerator struct {
 	credentials Credentials
 }
 
-func (p PayloadGenerator) LoginPayload() Payload {
+func (p *PayloadGenerator) LoginPayload() Payload {
 	fields := []MultipartFormField{
 		{
 			Name:  "__EVENTTARGET",

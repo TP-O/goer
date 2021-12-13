@@ -28,3 +28,11 @@ func CreateMultipartFormPayload(fileds []MultipartFormField) Payload {
 		Body: payload,
 	}
 }
+
+func NewHttp() HttpInterface {
+	http := Http{}
+
+	http.Initialize()
+
+	return &http
+}
