@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
+	"fmt"
 	"io"
 	"mime/multipart"
+	"os"
 	"strings"
 )
 
@@ -28,6 +31,18 @@ type RegistrationBody struct {
 	TietBD               string `json:"tietBD"`
 	SoTiet               string `json:"soTiet"`
 	IsMHDangKyCungKhoiSV string `json:"isMHDangKyCungKhoiSV"`
+}
+
+type ArrayFlag []string
+
+func (i *ArrayFlag) String() string {
+	return ""
+}
+
+func (i *ArrayFlag) Set(value string) error {
+	*i = append(*i, value)
+
+	return nil
 }
 
 func CreateMultipartFormPayload(fileds []MultipartFormField) Payload {
@@ -78,4 +93,21 @@ func CreateRegistrationBody(id string) (*bytes.Buffer, string) {
 	byteBody, _ := json.Marshal(body)
 
 	return bytes.NewBuffer(byteBody), value[2]
+}
+
+func RunCLI() (string, string, []string) {
+	var courseId ArrayFlag
+	id := flag.String("u", "", "Your student ID")
+	password := flag.String("p", "", "Your password")
+
+	flag.Var(&courseId, "i", "List of course IDs")
+	flag.Parse()
+
+	if *id == "" || *password == "" {
+		fmt.Println("ID and Password are required!")
+
+		os.Exit(126)
+	}
+
+	return *id, *password, courseId
 }

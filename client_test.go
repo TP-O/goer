@@ -74,7 +74,9 @@ func TestLogin(t *testing.T) {
 		},
 	}, nil).Once()
 
-	assert.True(t, client.Login())
+	ok, _ := client.Login()
+
+	assert.True(t, ok)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
@@ -84,7 +86,9 @@ func TestLogin(t *testing.T) {
 		},
 	}, nil).Once()
 
-	assert.False(t, client.Login())
+	ok, _ = client.Login()
+
+	assert.False(t, ok)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
@@ -94,12 +98,16 @@ func TestLogin(t *testing.T) {
 		},
 	}, nil).Once()
 
-	assert.False(t, client.Login())
+	ok, _ = client.Login()
+
+	assert.False(t, ok)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
 
-	assert.False(t, client.Login())
+	ok, _ = client.Login()
+
+	assert.False(t, ok)
 }
 
 func TestRegister(t *testing.T) {

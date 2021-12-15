@@ -2,28 +2,59 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/withmandala/go-log"
 )
 
-var logger = log.New(os.Stderr)
-
 func main() {
+	// Receive variables from CLI
+	id, password, courseId := RunCLI()
+
+	// Init logger
+	logger := log.New(os.Stderr)
+
+	// Client
 	client := Client{
 		Host: "https://edusoftweb.hcmiu.edu.vn",
 		Http: NewHttp(),
 		PayloadGenerator: &PayloadGenerator{
 			credentials: Credentials{
-				ID:       "ITITIU19180",
-				Password: "Password",
+				ID:       id,
+				Password: password,
 			},
 		},
 	}
 
-	for client.Login() == false {
+	for true {
+		loggedIn, message := client.Login()
+
+		if loggedIn == true {
+			logger.Info(message)
+
+			break
+		} else {
+			logger.Warn(message)
+		}
 	}
 
-	client.SayHi()
-	client.Register("CH012IU06    |CH012IU|Chemistry Laboratory|06|1|0|01/01/0001|0|0|0||0|ITIT19CS31")
-	client.Save()
+	// Get student ID
+	// logger.Info(client.SayHi())
+
+	for len(courseId) != 0 {
+		// Register for courses
+		for i, id := range courseId {
+			if ok, err := client.Register(id); ok {
+				// Append next part to previous part
+				courseId = append(courseId[:i], courseId[i+1:]...)
+
+				logger.Infof("Registered: %s", strings.Split(id, "|")[2])
+			} else {
+				logger.Warnf(err.Error())
+			}
+		}
+
+		// Save registration
+		client.Save()
+	}
 }

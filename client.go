@@ -16,7 +16,7 @@ type Client struct {
 	PayloadGenerator PayloadGeneratorInterface
 }
 
-func (c *Client) Login() bool {
+func (c *Client) Login() (bool, string) {
 	path := "/default.aspx"
 	payload := c.PayloadGenerator.LoginPayload()
 
@@ -24,30 +24,25 @@ func (c *Client) Login() bool {
 	req.Header.Add("Content-Type", payload.Type)
 
 	if res, err := c.Http.Do(req); err != nil {
-		logger.Warnf("%s 😢 Trying to login again...", err)
-
-		return false
+		return false, err.Error() + " 😢 Trying to login again..."
 	} else if res.StatusCode != 302 || strings.Contains(res.Header.Values("Location")[0], "sessionreuse") {
-		logger.Warn("Login failed 😢 Trying to login again...")
-
-		return false
+		return false, "Login failed 😢 Trying to login again..."
 	} else {
-		logger.Info("Login successfully!!! 😆")
-
-		return true
+		return true, "Login successfully!!! 😆"
 	}
 }
 
-func (c *Client) SayHi() {
+func (c *Client) SayHi() string {
 	path := "/default.aspx"
 
 	req, _ := http.NewRequest("GET", c.Host+path, nil)
 
 	if res, err := c.Http.Do(req); err != nil {
-		logger.Warn(err)
+		return "..."
 	} else {
 		document, _ := goquery.NewDocumentFromReader(res.Body)
-		logger.Info(document.Find("#ctl00_Header1_Logout1_lblNguoiDung").Text())
+
+		return document.Find("#ctl00_Header1_Logout1_lblNguoiDung").Text()
 	}
 }
 
