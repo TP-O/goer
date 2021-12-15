@@ -29,3 +29,22 @@ func TestNewHttp(t *testing.T) {
 	assert.NotEmpty(t, http.GetClient().Jar)
 	assert.Equal(t, http.GetClient().Timeout, 50*time.Second)
 }
+
+func TestCreateRegistrationBody(t *testing.T) {
+	body, course := CreateRegistrationBody("MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|")
+
+	assert.True(t, course == "TenMH")
+	assert.True(t, strings.Contains(body.String(), "\"isValidCoso\":false"))
+	assert.True(t, strings.Contains(body.String(), "\"isValidTKB\":false"))
+	assert.True(t, strings.Contains(body.String(), "\"strsoTCHP\":\"0\""))
+	assert.True(t, strings.Contains(body.String(), "\"isCheck\":\"true\""))
+	assert.True(t, strings.Contains(body.String(), "\"isMHDangKyCungKhoiSV\":\"0\""))
+	assert.True(t, strings.Contains(body.String(), "\"maDK\":\"MaDK\""))
+	assert.True(t, strings.Contains(body.String(), "\"maMH\":\"MaMH\""))
+	assert.True(t, strings.Contains(body.String(), "\"tenMH\":\"TenMH\""))
+	assert.True(t, strings.Contains(body.String(), "\"maNh\":\"MaNh\""))
+	assert.True(t, strings.Contains(body.String(), "\"sotc\":\"Sotc\""))
+	assert.True(t, strings.Contains(body.String(), "\"strngayThi\":\"StrngayThi\""))
+	assert.True(t, strings.Contains(body.String(), "\"tietBD\":\"TietBD\""))
+	assert.True(t, strings.Contains(body.String(), "\"soTiet\":\"SoTiet\""))
+}

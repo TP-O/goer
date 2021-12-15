@@ -25,3 +25,21 @@ func TestLoginInPayload(t *testing.T) {
 	assert.Contains(t, payload.Body.String(), payloadGenerator.credentials.ID)
 	assert.Contains(t, payload.Body.String(), payloadGenerator.credentials.Password)
 }
+
+func TestRegistrationPayload(t *testing.T) {
+	payloadGenerator := PayloadGenerator{}
+	payload, course := payloadGenerator.RegistrationPayload("MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|")
+
+	assert.Equal(t, course, "TenMH")
+	assert.Equal(t, payload.Type, "text/plain; charset=utf-8")
+	assert.NotEmpty(t, payload.Body)
+}
+
+func TestSavePayload(t *testing.T) {
+	payloadGenerator := PayloadGenerator{}
+	payload := payloadGenerator.SavePayload()
+
+	assert.Equal(t, payload.Type, "text/plain; charset=utf-8")
+	assert.Contains(t, payload.Body.String(), "\"isCheckSongHanh\": false")
+	assert.Contains(t, payload.Body.String(), "\"ChiaHP\": false")
+}

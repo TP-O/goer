@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,6 +17,18 @@ type PayloadGeneratorMock struct {
 }
 
 func (p *PayloadGeneratorMock) LoginPayload() Payload {
+	args := p.Called()
+
+	return args.Get(0).(Payload)
+}
+
+func (p *PayloadGeneratorMock) RegistrationPayload(id string) (Payload, string) {
+	args := p.Called(id)
+
+	return args.Get(0).(Payload), args.String(1)
+}
+
+func (p *PayloadGeneratorMock) SavePayload() Payload {
 	args := p.Called()
 
 	return args.Get(0).(Payload)
@@ -39,24 +53,146 @@ func TestLogin(t *testing.T) {
 	httpMock := HttpMock{}
 
 	payload := Payload{
-		Type: "cc",
+		Type: "xx",
 		Body: &bytes.Buffer{},
 	}
 
 	payloadGeneratorMock.On("LoginPayload").Return(payload)
 
-	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{StatusCode: 302}, nil).Once()
-	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{StatusCode: 200}, nil).Once()
-	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
-
 	client := Client{
-		Host:             "mock.com",
 		Http:             &httpMock,
 		PayloadGenerator: &payloadGeneratorMock,
 	}
 
 	assert.NotEmpty(t, client)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		StatusCode: 302,
+		Header: map[string][]string{
+			"Location": {""},
+		},
+	}, nil).Once()
+
 	assert.True(t, client.Login())
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		StatusCode: 302,
+		Header: map[string][]string{
+			"Location": {"sessionreuse"},
+		},
+	}, nil).Once()
+
 	assert.False(t, client.Login())
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		StatusCode: 200,
+		Header: map[string][]string{
+			"Location": {},
+		},
+	}, nil).Once()
+
 	assert.False(t, client.Login())
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
+
+	assert.False(t, client.Login())
+}
+
+func TestRegister(t *testing.T) {
+	ID := "MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|"
+	payloadGeneratorMock := PayloadGeneratorMock{}
+	httpMock := HttpMock{}
+
+	payload := Payload{
+		Type: "xx",
+		Body: &bytes.Buffer{},
+	}
+
+	payloadGeneratorMock.On("RegistrationPayload", ID).Return(payload, "TenMH")
+
+	client := Client{
+		Http:             &httpMock,
+		PayloadGenerator: &payloadGeneratorMock,
+	}
+
+	assert.NotEmpty(t, client)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		Body: io.NopCloser(strings.NewReader("TenMH")),
+	}, nil).Once()
+
+	ok, err := client.Register(ID)
+
+	assert.True(t, ok)
+	assert.Empty(t, err)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		Body: io.NopCloser(strings.NewReader("")),
+	}, nil).Once()
+
+	ok, err = client.Register(ID)
+
+	assert.False(t, ok)
+	assert.NotEmpty(t, err)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
+
+	ok, err = client.Register(ID)
+
+	assert.False(t, ok)
+	assert.NotEmpty(t, err)
+}
+
+func TestSave(t *testing.T) {
+	payloadGeneratorMock := PayloadGeneratorMock{}
+	httpMock := HttpMock{}
+
+	payload := Payload{
+		Type: "xx",
+		Body: &bytes.Buffer{},
+	}
+
+	payloadGeneratorMock.On("SavePayload").Return(payload)
+
+	client := Client{
+		Http:             &httpMock,
+		PayloadGenerator: &payloadGeneratorMock,
+	}
+
+	assert.NotEmpty(t, client)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		Body: io.NopCloser(strings.NewReader("||default.aspx?page=dkmonhoc")),
+	}, nil).Once()
+
+	ok, err := client.Save()
+
+	assert.True(t, ok)
+	assert.Empty(t, err)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+		Body: io.NopCloser(strings.NewReader("")),
+	}, nil).Once()
+
+	ok, err = client.Save()
+
+	assert.False(t, ok)
+	assert.NotEmpty(t, err)
+
+	/* ============================= */
+	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
+
+	ok, err = client.Save()
+
+	assert.False(t, ok)
+	assert.NotEmpty(t, err)
 }

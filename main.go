@@ -20,6 +20,10 @@ func main() {
 		},
 	}
 
-	client.Login()
+	for client.Login() == false {
+	}
+
 	client.SayHi()
+	client.Register("CH012IU06    |CH012IU|Chemistry Laboratory|06|1|0|01/01/0001|0|0|0||0|ITIT19CS31")
+	client.Save()
 }

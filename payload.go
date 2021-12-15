@@ -16,6 +16,8 @@ type Credentials struct {
 
 type PayloadGeneratorInterface interface {
 	LoginPayload() Payload
+	RegistrationPayload(id string) (Payload, string)
+	SavePayload() Payload
 }
 
 type PayloadGenerator struct {
@@ -47,4 +49,26 @@ func (p *PayloadGenerator) LoginPayload() Payload {
 	}
 
 	return CreateMultipartFormPayload(fields)
+}
+
+func (p *PayloadGenerator) RegistrationPayload(id string) (Payload, string) {
+	body, course := CreateRegistrationBody(id)
+
+	return Payload{
+			Type: "text/plain; charset=utf-8",
+			Body: body,
+		},
+		course
+}
+
+func (p *PayloadGenerator) SavePayload() Payload {
+	body := bytes.NewBuffer([]byte(`{
+		"isCheckSongHanh": false,
+		"ChiaHP": false
+	}`))
+
+	return Payload{
+		Type: "text/plain; charset=utf-8",
+		Body: body,
+	}
 }
