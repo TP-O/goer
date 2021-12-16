@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// Receive variables from CLI
-	id, password, courseId := RunCLI()
+	id, password, host, courseId := RunCLI()
 	registeredId := []string{}
 	saved := false
 
@@ -19,7 +19,7 @@ func main() {
 
 	// Client
 	client := Client{
-		Host: "https://edusoftweb.hcmiu.edu.vn",
+		Host: host,
 		Http: NewHttp(),
 		PayloadGenerator: &PayloadGenerator{
 			credentials: Credentials{
@@ -60,7 +60,7 @@ func main() {
 				// Update registerId list
 				registeredId = append(registeredId, id)
 
-				logger.Infof("[%s] [%s]", course, messsage)
+				logger.Infof("[%s] %s", course, messsage)
 			} else {
 				logger.Warnf("[%s] %s", course, messsage)
 			}
@@ -69,7 +69,7 @@ func main() {
 			time.Sleep(2 * time.Second)
 		}
 
-		// Save registration if new course id selected
+		// Save registration if new course is selected
 		if !saved || registeredString != strings.Join(registeredId, "") {
 			if ok, messsage := client.Save(); ok {
 				saved = ok
