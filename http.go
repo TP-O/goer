@@ -24,6 +24,8 @@ func (h *Http) Initialize() {
 				return http.ErrUseLastResponse
 			},
 		}
+	} else {
+		panic(err)
 	}
 }
 

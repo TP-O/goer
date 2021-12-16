@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// Receive variables from CLI
-	id, password, host, courseId := RunCLI()
+	id, password, host, session, courseId := RunCLI()
 	registeredId := []string{}
 	saved := false
 
@@ -19,8 +19,9 @@ func main() {
 
 	// Client
 	client := Client{
-		Host: host,
-		Http: NewHttp(),
+		Host:    host,
+		Session: session,
+		Http:    NewHttp(),
 		PayloadGenerator: &PayloadGenerator{
 			credentials: Credentials{
 				ID:       id,
@@ -30,9 +31,7 @@ func main() {
 	}
 
 	for true {
-		loggedIn, message := client.Login()
-
-		if loggedIn == true {
+		if ok, message := client.Login(); ok {
 			logger.Info(message)
 
 			break

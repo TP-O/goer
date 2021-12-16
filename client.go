@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -11,11 +12,32 @@ import (
 
 type Client struct {
 	Host             string
+	Session          string
 	Http             HttpInterface
 	PayloadGenerator PayloadGeneratorInterface
 }
 
+func (c *Client) CheckSession() bool {
+	if url, err := url.Parse(c.Host); err == nil && c.Session != "" {
+		c.Http.GetClient().Jar.SetCookies(url, []*http.Cookie{
+			{
+				Name:     "ASP.NET_SessionId",
+				Value:    c.Session,
+				HttpOnly: true,
+			},
+		})
+
+		return true
+	}
+
+	return false
+}
+
 func (c *Client) Login() (bool, string) {
+	if c.CheckSession() {
+		return true, "Session is used!!"
+	}
+
 	path := "/default.aspx"
 	payload := c.PayloadGenerator.LoginPayload()
 
@@ -27,6 +49,10 @@ func (c *Client) Login() (bool, string) {
 	} else if res.StatusCode != 302 || strings.Contains(res.Header.Values("Location")[0], "sessionreuse") {
 		return false, "Login failed 😢 Trying to login again..."
 	} else {
+		if url, err := url.Parse(c.Host); err == nil {
+			return true, "Login successfully!!! 😆 [" + c.Http.GetClient().Jar.Cookies(url)[0].Value + "]"
+		}
+
 		return true, "Login successfully!!! 😆"
 	}
 }

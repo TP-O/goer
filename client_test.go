@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"strings"
 	"testing"
 
@@ -39,7 +40,9 @@ type HttpMock struct {
 }
 
 func (h *HttpMock) GetClient() *http.Client {
-	return nil
+	args := h.Called()
+
+	return args.Get(0).(*http.Client)
 }
 
 func (h *HttpMock) Do(req *http.Request) (*http.Response, error) {
@@ -48,10 +51,41 @@ func (h *HttpMock) Do(req *http.Request) (*http.Response, error) {
 	return args.Get(0).(*http.Response), args.Error(1)
 }
 
-func TestLogin(t *testing.T) {
-	payloadGeneratorMock := PayloadGeneratorMock{}
-	httpMock := HttpMock{}
+// Init mocks
+var httpMock = HttpMock{}
+var payloadGeneratorMock = PayloadGeneratorMock{}
 
+// Instance
+var client = Client{
+	Host:             "https://mock.com",
+	Session:          "session",
+	Http:             &httpMock,
+	PayloadGenerator: &payloadGeneratorMock,
+}
+
+// Cookie
+var jar, _ = cookiejar.New(nil)
+
+func TestCheckSession(t *testing.T) {
+	httpMock.On("GetClient").Return(&http.Client{Jar: jar})
+
+	assert.NotEmpty(t, client)
+
+	/* ============================= */
+	ok := client.CheckSession()
+
+	assert.True(t, ok)
+
+	// Delete session for the next tests
+	client.Session = ""
+
+	/* ============================= */
+	ok = client.CheckSession()
+
+	assert.False(t, ok)
+}
+
+func TestLogin(t *testing.T) {
 	payload := Payload{
 		Type: "xx",
 		Body: &bytes.Buffer{},
@@ -59,12 +93,20 @@ func TestLogin(t *testing.T) {
 
 	payloadGeneratorMock.On("LoginPayload").Return(payload)
 
-	client := Client{
-		Http:             &httpMock,
-		PayloadGenerator: &payloadGeneratorMock,
-	}
-
 	assert.NotEmpty(t, client)
+
+	/* ============================= */
+	client.Session = "session"
+
+	httpMock.On("GetClient").Return(&http.Client{Jar: jar})
+
+	ok, _ := client.Login()
+
+	assert.True(t, ok)
+	httpMock.AssertNotCalled(t, "Do")
+
+	// Delete session for the next tests
+	client.Session = ""
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
@@ -74,7 +116,7 @@ func TestLogin(t *testing.T) {
 		},
 	}, nil).Once()
 
-	ok, _ := client.Login()
+	ok, _ = client.Login()
 
 	assert.True(t, ok)
 
@@ -112,8 +154,6 @@ func TestLogin(t *testing.T) {
 
 func TestRegister(t *testing.T) {
 	ID := "MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|"
-	payloadGeneratorMock := PayloadGeneratorMock{}
-	httpMock := HttpMock{}
 
 	payload := Payload{
 		Type: "xx",
@@ -121,11 +161,6 @@ func TestRegister(t *testing.T) {
 	}
 
 	payloadGeneratorMock.On("RegistrationPayload", ID).Return(payload, "TenMH")
-
-	client := Client{
-		Http:             &httpMock,
-		PayloadGenerator: &payloadGeneratorMock,
-	}
 
 	assert.NotEmpty(t, client)
 
@@ -159,20 +194,12 @@ func TestRegister(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	payloadGeneratorMock := PayloadGeneratorMock{}
-	httpMock := HttpMock{}
-
 	payload := Payload{
 		Type: "xx",
 		Body: &bytes.Buffer{},
 	}
 
 	payloadGeneratorMock.On("SavePayload").Return(payload)
-
-	client := Client{
-		Http:             &httpMock,
-		PayloadGenerator: &payloadGeneratorMock,
-	}
 
 	assert.NotEmpty(t, client)
 
