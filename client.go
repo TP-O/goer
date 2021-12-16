@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -46,7 +45,7 @@ func (c *Client) SayHi() string {
 	}
 }
 
-func (c *Client) Register(id string) (bool, error) {
+func (c *Client) Register(id string) (bool, string) {
 	path := "/ajaxpro/EduSoft.Web.UC.DangKyMonHoc,EduSoft.Web.ashx"
 	payload, course := c.PayloadGenerator.RegistrationPayload(id)
 
@@ -55,19 +54,19 @@ func (c *Client) Register(id string) (bool, error) {
 	req.Header.Add("X-AjaxPro-Method", "LuuVaoKetQuaDangKy")
 
 	if res, err := c.Http.Do(req); err != nil {
-		return false, err
+		return false, err.Error()
 	} else {
 		resBody, _ := io.ReadAll(res.Body)
 
 		if bytes.Contains(resBody, []byte(course)) {
-			return true, nil
+			return true, "Registered"
 		}
 
-		return false, errors.New("Register failed 😢")
+		return false, "Register failed 😢"
 	}
 }
 
-func (c *Client) Save() (bool, error) {
+func (c *Client) Save() (bool, string) {
 	path := "/ajaxpro/EduSoft.Web.UC.DangKyMonHoc,EduSoft.Web.ashx"
 	payload := c.PayloadGenerator.SavePayload()
 
@@ -76,14 +75,14 @@ func (c *Client) Save() (bool, error) {
 	req.Header.Add("X-AjaxPro-Method", "LuuDanhSachDangKy_HopLe")
 
 	if res, err := c.Http.Do(req); err != nil {
-		return false, err
+		return false, err.Error()
 	} else {
 		resBody, _ := io.ReadAll(res.Body)
 
 		if bytes.Contains(resBody, []byte("||default.aspx?page=dkmonhoc")) {
-			return true, nil
+			return true, "Saved!!"
 		}
 
-		return false, errors.New("Save failed 😢")
+		return false, "Save failed 😢"
 	}
 }

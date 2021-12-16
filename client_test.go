@@ -134,28 +134,28 @@ func TestRegister(t *testing.T) {
 		Body: io.NopCloser(strings.NewReader("TenMH")),
 	}, nil).Once()
 
-	ok, err := client.Register(ID)
+	ok, message := client.Register(ID)
 
 	assert.True(t, ok)
-	assert.Empty(t, err)
+	assert.NotEmpty(t, message)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		Body: io.NopCloser(strings.NewReader("")),
 	}, nil).Once()
 
-	ok, err = client.Register(ID)
+	ok, message = client.Register(ID)
 
 	assert.False(t, ok)
-	assert.NotEmpty(t, err)
+	assert.NotEmpty(t, message)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
 
-	ok, err = client.Register(ID)
+	ok, message = client.Register(ID)
 
 	assert.False(t, ok)
-	assert.NotEmpty(t, err)
+	assert.NotEmpty(t, message)
 }
 
 func TestSave(t *testing.T) {
@@ -181,26 +181,26 @@ func TestSave(t *testing.T) {
 		Body: io.NopCloser(strings.NewReader("||default.aspx?page=dkmonhoc")),
 	}, nil).Once()
 
-	ok, err := client.Save()
+	ok, message := client.Save()
 
 	assert.True(t, ok)
-	assert.Empty(t, err)
+	assert.NotEmpty(t, message)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		Body: io.NopCloser(strings.NewReader("")),
 	}, nil).Once()
 
-	ok, err = client.Save()
+	ok, message = client.Save()
 
 	assert.False(t, ok)
-	assert.NotEmpty(t, err)
+	assert.NotEmpty(t, message)
 
 	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
 
-	ok, err = client.Save()
+	ok, message = client.Save()
 
 	assert.False(t, ok)
-	assert.NotEmpty(t, err)
+	assert.NotEmpty(t, message)
 }
