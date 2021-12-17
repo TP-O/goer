@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -19,6 +20,11 @@ func main() {
 
 	// Init logger
 	logger := log.New(os.Stderr)
+
+	// Disble colorf on windows
+	if runtime.GOOS == "windows" {
+		logger.WithoutColor()
+	}
 
 	// Client
 	client := Client{
