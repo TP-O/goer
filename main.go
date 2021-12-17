@@ -10,9 +10,12 @@ import (
 
 func main() {
 	// Receive variables from CLI
-	id, password, host, session, courseId := RunCLI()
+	id, password, host, session, careful, courseId := RunCLI()
 	registeredId := []string{}
-	saved := false
+
+	// Careful mode will ignore this saved condition
+	// in the while loop below (always true).
+	saved := careful
 
 	// Init logger
 	logger := log.New(os.Stderr)
@@ -30,6 +33,7 @@ func main() {
 		},
 	}
 
+	// Retry until successful login
 	for true {
 		if ok, message := client.Login(); ok {
 			logger.Info(message)
@@ -43,6 +47,9 @@ func main() {
 	// Get student ID
 	// logger.Info(client.SayHi())
 
+	// If careful mode is enabled, `!saved`` condition is always false.
+	// Therefore, the condition to continue this while loop is
+	// to check the lenghth of registered course array.
 	for !saved || len(registeredId) < len(courseId) {
 		registeredString := strings.Join(registeredId, "")
 
@@ -53,6 +60,7 @@ func main() {
 				continue
 			}
 
+			// Get course name
 			course := strings.Split(id, "|")[2]
 
 			if ok, messsage := client.Register(id); ok {
@@ -60,6 +68,15 @@ func main() {
 				registeredId = append(registeredId, id)
 
 				logger.Infof("[%s] %s", course, messsage)
+
+				// Save after selecting
+				if careful {
+					if ok, messsage := client.Save(); ok {
+						logger.Infof(messsage)
+					} else {
+						logger.Warnf(messsage)
+					}
+				}
 			} else {
 				logger.Warnf("[%s] %s", course, messsage)
 			}
@@ -68,8 +85,9 @@ func main() {
 			time.Sleep(2 * time.Second)
 		}
 
-		// Save registration if new course is selected
-		if !saved || registeredString != strings.Join(registeredId, "") {
+		// Save registration if new course is selected.
+		// Ignore if careful mode is enabled.
+		if !careful && (!saved || registeredString != strings.Join(registeredId, "")) {
 			if ok, messsage := client.Save(); ok {
 				saved = ok
 
