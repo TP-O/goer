@@ -27,7 +27,7 @@ func TestNewHttp(t *testing.T) {
 
 	assert.NotEmpty(t, http)
 	assert.NotEmpty(t, http.GetClient().Jar)
-	assert.Equal(t, http.GetClient().Timeout, 50*time.Second)
+	assert.Equal(t, http.GetClient().Timeout, 60*time.Second)
 }
 
 func TestCreateRegistrationBody(t *testing.T) {

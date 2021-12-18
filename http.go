@@ -19,7 +19,7 @@ func (h *Http) Initialize() {
 	if jar, err := cookiejar.New(nil); err == nil {
 		h.HttpClient = &http.Client{
 			Jar:     jar,
-			Timeout: 50 * time.Second,
+			Timeout: 60 * time.Second,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
