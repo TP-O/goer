@@ -106,7 +106,7 @@ func RunCLI() (string, string, string, string, bool, []string) {
 	flag.Var(&courseId, "i", "List of course IDs")
 	flag.Parse()
 
-	if *id == "" || *password == "" {
+	if (*id == "" || *password == "") && *session == "" {
 		fmt.Println("ID and Password are required!")
 
 		os.Exit(126)
