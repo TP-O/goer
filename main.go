@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"os"
 	"runtime"
 	"strings"
@@ -17,6 +18,10 @@ func main() {
 	// Careful mode will ignore this saved condition
 	// in the while loop below (always true).
 	saved := careful
+
+	// Read input from console
+	reader := bufio.NewReader(os.Stdin)
+	input := ""
 
 	// Init logger
 	logger := log.New(os.Stderr)
@@ -48,6 +53,12 @@ func main() {
 		} else {
 			logger.Warn(message)
 		}
+	}
+
+	// Wait for user accepting
+	for len(input) == 0 {
+		logger.Info("Press enter to continue")
+		input, _ = reader.ReadString('\n')
 	}
 
 	// Get student ID
