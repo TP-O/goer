@@ -58,32 +58,12 @@ var payloadGeneratorMock = PayloadGeneratorMock{}
 // Instance
 var client = Client{
 	Host:             "https://mock.com",
-	Session:          "session",
 	Http:             &httpMock,
 	PayloadGenerator: &payloadGeneratorMock,
 }
 
 // Cookie
 var jar, _ = cookiejar.New(nil)
-
-func TestCheckSession(t *testing.T) {
-	httpMock.On("GetClient").Return(&http.Client{Jar: jar})
-
-	assert.NotEmpty(t, client)
-
-	/* ============================= */
-	ok := client.CheckSession()
-
-	assert.True(t, ok)
-
-	// Delete session for the next tests
-	client.Session = ""
-
-	/* ============================= */
-	ok = client.CheckSession()
-
-	assert.False(t, ok)
-}
 
 func TestLogin(t *testing.T) {
 	payload := Payload{
@@ -96,19 +76,6 @@ func TestLogin(t *testing.T) {
 	assert.NotEmpty(t, client)
 
 	/* ============================= */
-	client.Session = "session"
-
-	httpMock.On("GetClient").Return(&http.Client{Jar: jar})
-
-	ok, _ := client.Login()
-
-	assert.True(t, ok)
-	httpMock.AssertNotCalled(t, "Do")
-
-	// Delete session for the next tests
-	client.Session = ""
-
-	/* ============================= */
 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 		StatusCode: 302,
 		Header: map[string][]string{
@@ -116,7 +83,7 @@ func TestLogin(t *testing.T) {
 		},
 	}, nil).Once()
 
-	ok, _ = client.Login()
+	ok, _ := client.Login()
 
 	assert.True(t, ok)
 

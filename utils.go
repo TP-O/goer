@@ -95,22 +95,21 @@ func CreateRegistrationBody(id string) (*bytes.Buffer, string) {
 	return bytes.NewBuffer(byteBody), value[2]
 }
 
-func RunCLI() (string, string, string, string, bool, []string) {
+func RunCLI() (string, string, string, bool, []string) {
 	var courseId ArrayFlag
 	id := flag.String("u", "", "Student ID")
 	password := flag.String("p", "", "Password")
 	host := flag.String("d", "https://edusoftweb.hcmiu.edu.vn", "Domain name")
-	session := flag.String("s", "", "Session ID")
 	careful := flag.Bool("c", false, "Save after each selection")
 
 	flag.Var(&courseId, "i", "List of course IDs")
 	flag.Parse()
 
-	if (*id == "" || *password == "") && *session == "" {
+	if *id == "" || *password == "" {
 		fmt.Println("ID and Password are required!")
 
 		os.Exit(126)
 	}
 
-	return *id, *password, *host, *session, *careful, courseId
+	return *id, *password, *host, *careful, courseId
 }

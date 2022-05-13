@@ -16,26 +16,16 @@ Usage of goer:
   -d    Domain name (default "https://edusoftweb.hcmiu.edu.vn")
   -i    List of course IDs
   -p    Password
-  -s    Session ID
   -u    Student ID
 ```
 
 ## Example
 [How to get course ID](https://youtu.be/nPnCHI7AVZg)
 
-### Use username and password
 ```bash
 $ goer \
     -u ITITIU19180 \
     -p Mypassword \
-    -i "IT092IU02  01|IT092IU|Principles of Programming Languages|02|4|0|01/01/0001|0|0|0| |0|ITIT19CS31" \
-    -i "IT093IU02  01|IT093IU|Web Application Development|02|4|0|01/01/0001|0|0|0| |0|ITIT19CS31"
-```
-
-### Use session ID
-```bash
-$ goer \
-    -s SessionID \
     -i "IT092IU02  01|IT092IU|Principles of Programming Languages|02|4|0|01/01/0001|0|0|0| |0|ITIT19CS31" \
     -i "IT093IU02  01|IT093IU|Web Application Development|02|4|0|01/01/0001|0|0|0| |0|ITIT19CS31"
 ```

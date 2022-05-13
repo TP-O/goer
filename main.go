@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"os"
 	"runtime"
 	"strings"
@@ -12,16 +11,12 @@ import (
 
 func main() {
 	// Receive variables from CLI
-	id, password, host, session, careful, courseId := RunCLI()
+	id, password, host, careful, courseId := RunCLI()
 	registeredId := []string{}
 
 	// Careful mode will ignore this saved condition
 	// in the while loop below (always true).
 	saved := careful
-
-	// Read input from console
-	reader := bufio.NewReader(os.Stdin)
-	input := ""
 
 	// Init logger
 	logger := log.New(os.Stderr)
@@ -33,9 +28,8 @@ func main() {
 
 	// Client
 	client := Client{
-		Host:    host,
-		Session: session,
-		Http:    NewHttp(),
+		Host: host,
+		Http: NewHttp(),
 		PayloadGenerator: &PayloadGenerator{
 			credentials: Credentials{
 				ID:       id,
@@ -49,20 +43,23 @@ func main() {
 		if ok, message := client.Login(); ok {
 			logger.Info(message)
 
-			break
+			if isReady, isReadyMessage := client.IsReady(); isReady {
+				logger.Info(isReadyMessage)
+
+				break
+			} else {
+				logger.Warn(isReadyMessage)
+				logger.Warn("Logging in again...")
+
+				client.Reset()
+			}
 		} else {
 			logger.Warn(message)
 		}
 	}
 
-	// Wait for user accepting
-	for len(input) == 0 {
-		logger.Info("Press enter to continue")
-		input, _ = reader.ReadString('\n')
-	}
-
 	// Get student ID
-	// logger.Info(client.SayHi())
+	logger.Info(client.SayHi())
 
 	// If careful mode is enabled, `!saved`` condition is always false.
 	// Therefore, the condition to continue this while loop is
