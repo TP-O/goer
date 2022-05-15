@@ -119,6 +119,14 @@ func TestLogin(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestReset(t *testing.T) {
+	//
+}
+
+func TestIsReady(t *testing.T) {
+	//
+}
+
 func TestRegister(t *testing.T) {
 	ID := "MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|"
 

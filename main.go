@@ -10,23 +10,22 @@ import (
 )
 
 func main() {
-	// Receive variables from CLI
-	id, password, host, careful, courseId := RunCLI()
-	registeredId := []string{}
+	// Receive variables from CLI.
+	id, password, host, careful, courseIds := RunCLI()
+	registeredIds := []string{}
 
-	// Careful mode will ignore this saved condition
-	// in the while loop below (always true).
-	saved := careful
+	// Determine if saving registrations is required or not.
+	saved := true
 
-	// Init logger
+	// Init logger.
 	logger := log.New(os.Stderr)
 
-	// Disble colorf on windows
+	// Disble colorf on windows.
 	if runtime.GOOS == "windows" {
 		logger.WithoutColor()
 	}
 
-	// Client
+	// Declare client with student credentials.
 	client := Client{
 		Host: host,
 		Http: NewHttp(),
@@ -38,7 +37,7 @@ func main() {
 		},
 	}
 
-	// Retry until successful login
+	// Retry loggin in until registration is ready.
 	for true {
 		if ok, message := client.Login(); ok {
 			logger.Info(message)
@@ -58,28 +57,28 @@ func main() {
 		}
 	}
 
-	// Get student ID
-	logger.Info(client.SayHi())
+	// Get student ID.
+	// logger.Info(client.SayHi())
 
-	// If careful mode is enabled, `!saved`` condition is always false.
-	// Therefore, the condition to continue this while loop is
-	// to check the lenghth of registered course array.
-	for !saved || len(registeredId) < len(courseId) {
-		registeredString := strings.Join(registeredId, "")
+	// Checking saving registrations is ignored if careful mode is enable
+	// because saving is executed after select one course. Run until
+	// all courses are registered.
+	for (!saved && !careful) || len(registeredIds) < len(courseIds) {
+		registeredString := strings.Join(registeredIds, "")
 
 		// Register for courses
-		for _, id := range courseId {
+		for _, courseId := range courseIds {
 			// Skip if course is already selected
-			if strings.Contains(registeredString, id) {
+			if strings.Contains(registeredString, courseId) {
 				continue
 			}
 
 			// Get course name
-			course := strings.Split(id, "|")[2]
+			course := strings.Split(courseId, "|")[2]
 
-			if ok, messsage := client.Register(id); ok {
-				// Update registerId list
-				registeredId = append(registeredId, id)
+			if ok, messsage := client.Register(courseId); ok {
+				// Update registerIds list
+				registeredIds = append(registeredIds, courseId)
 
 				logger.Infof("[%s] %s", course, messsage)
 
@@ -88,6 +87,8 @@ func main() {
 					if ok, messsage := client.Save(); ok {
 						logger.Infof(messsage)
 					} else {
+						registeredIds = registeredIds[:len(registeredIds)-1]
+
 						logger.Warnf(messsage)
 					}
 				}
@@ -99,9 +100,9 @@ func main() {
 			time.Sleep(2 * time.Second)
 		}
 
-		// Save registration if new course is selected.
+		// Save registration if new courses are selected.
 		// Ignore if careful mode is enabled.
-		if !careful && (!saved || registeredString != strings.Join(registeredId, "")) {
+		if !careful && (!saved || registeredString != strings.Join(registeredIds, "")) {
 			if ok, messsage := client.Save(); ok {
 				saved = ok
 
