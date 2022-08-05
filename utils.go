@@ -95,12 +95,13 @@ func CreateRegistrationBody(id string) (*bytes.Buffer, string) {
 	return bytes.NewBuffer(byteBody), value[2]
 }
 
-func RunCLI() (string, string, string, bool, []string) {
+func RunCLI() (string, string, string, bool, bool, []string) {
 	var courseId ArrayFlag
 	id := flag.String("u", "", "Student ID")
 	password := flag.String("p", "", "Password")
 	host := flag.String("d", "https://edusoftweb.hcmiu.edu.vn", "Domain name")
 	careful := flag.Bool("c", false, "Save after each selection")
+	spam := flag.Bool("s", false, "Spam registration")
 
 	flag.Var(&courseId, "i", "List of course IDs")
 	flag.Parse()
@@ -111,5 +112,5 @@ func RunCLI() (string, string, string, bool, []string) {
 		os.Exit(126)
 	}
 
-	return *id, *password, *host, *careful, courseId
+	return *id, *password, *host, *careful, *spam, courseId
 }
