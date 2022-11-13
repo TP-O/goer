@@ -2,141 +2,101 @@ package main
 
 import (
 	"os"
-	"runtime"
-	"strings"
+	"sync"
 	"time"
 
-	"github.com/withmandala/go-log"
+	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	logrus.SetOutput(os.Stdout)
+}
+
 func main() {
-	// Receive variables from CLI.
-	id, password, host, careful, spam, courseIds := RunCLI()
-	registeredIds := []string{}
-
-	// Determine if saving registrations is required or not.
-	saved := true
-
-	// Init logger.
-	logger := log.New(os.Stderr)
-
-	// Disble colorf on windows.
-	if runtime.GOOS == "windows" {
-		logger.WithoutColor()
+	options := RunCLI()
+	credentials := &Credentials{
+		ID:       options.ID,
+		Password: options.Password,
 	}
+	goer := NewGoer(options.Origin)
 
-	// Declare client with student credentials.
-	client := Client{
-		Host: host,
-		Http: NewHttp(),
-		PayloadGenerator: &PayloadGenerator{
-			credentials: Credentials{
-				ID:       id,
-				Password: password,
-			},
-		},
-	}
+	logrus.Warn("=======================================================")
+	logrus.Warn("DO NOT ACCESS YOUR ACCOUNT WHEN THIS TOOL IS RUNNING!!!")
+	logrus.Warn("=======================================================")
 
-	// Retry loggin in until registration is ready.
+	// Try to log in again until the registration is ready
 	for true {
-		if ok, message := client.Login(); ok {
-			logger.Info(message)
+		if ok := goer.Login(credentials); ok {
+			// goer.Greet()
 
-			if isReady, isReadyMessage := client.IsReady(); isReady {
-				logger.Info(isReadyMessage)
-
+			if isOpen := goer.IsRegistrationOpen(); isOpen {
 				break
 			} else {
-				logger.Warn(isReadyMessage)
-				logger.Warn("Logging in again...")
-
-				client.Reset()
+				goer.Clear()
 			}
-		} else {
-			logger.Warn(message)
 		}
+
+		time.Sleep(1 * time.Second)
+		logrus.Info("Login again...")
 	}
 
-	// Get student ID.
-	// logger.Info(client.SayHi())
+	// Start registration
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	courseCounter := 0
+	courseIDChannel := make(chan string, options.Workers)
 
-	if spam {
-		for true {
-			// Register for courses
-			for _, courseId := range courseIds {
-				go func() {
-					// Get course name
-					course := strings.Split(courseId, "|")[2]
+	go func() {
+		for _, courseID := range options.CourseIDs {
+			courseIDChannel <- courseID
+		}
+	}()
 
-					if ok, messsage := client.Register(courseId); ok {
-						logger.Infof("[%s] %s", course, messsage)
+	for i := 0; i < int(options.Workers); i++ {
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
 
-						_, messsage := client.Save()
-						logger.Infof(messsage)
+			for courseID := range courseIDChannel {
+				if ok := goer.RegisterCourse(courseID); !ok {
+					courseIDChannel <- courseID
+				} else {
+					// Save the enrolled course after successful registration
+					if options.CarefulMode {
+						goer.SaveRegistration()
+					}
+
+					// Put the course ID back if spam is enable
+					if options.SpamInterval != 0 {
+						courseIDChannel <- courseID
+						time.Sleep(time.Duration(options.SpamInterval) * time.Second)
 					} else {
-						logger.Warnf("[%s] %s", course, messsage)
-					}
-				}()
+						mu.Lock()
 
-				// Avoid constant request sending
-				time.Sleep(5 * time.Second)
-			}
-		}
-	} else {
-		// Checking saving registrations is ignored if careful mode is enable
-		// because saving is executed after select one course. Run until
-		// all courses are registered.
-		for (!saved && !careful) || len(registeredIds) < len(courseIds) {
-			registeredString := strings.Join(registeredIds, "")
+						courseCounter++
 
-			// Register for courses
-			for _, courseId := range courseIds {
-				// Skip if course is already selected
-				if strings.Contains(registeredString, courseId) {
-					continue
-				}
-
-				// Get course name
-				course := strings.Split(courseId, "|")[2]
-
-				if ok, messsage := client.Register(courseId); ok {
-					// Update registerIds list
-					registeredIds = append(registeredIds, courseId)
-
-					logger.Infof("[%s] %s", course, messsage)
-
-					// Save after selecting
-					if careful {
-						if ok, messsage := client.Save(); ok {
-							logger.Infof(messsage)
-						} else {
-							registeredIds = registeredIds[:len(registeredIds)-1]
-
-							logger.Warnf(messsage)
+						// Close the channel if all courses are registered
+						if courseCounter == len(options.CourseIDs) {
+							close(courseIDChannel)
 						}
+
+						mu.Unlock()
 					}
-				} else {
-					logger.Warnf("[%s] %s", course, messsage)
-				}
-
-				// Avoid constant request sending
-				time.Sleep(2 * time.Second)
-			}
-
-			// Save registration if new courses are selected.
-			// Ignore if careful mode is enabled.
-			if !careful && (!saved || registeredString != strings.Join(registeredIds, "")) {
-				if ok, messsage := client.Save(); ok {
-					saved = ok
-
-					logger.Infof(messsage)
-				} else {
-					logger.Warnf(messsage)
 				}
 			}
-
-			// Avoid constant request sending
-			time.Sleep(2 * time.Second)
-		}
+		}()
 	}
+
+	wg.Wait()
+
+	// Save all registered courses
+	if !options.CarefulMode {
+		goer.SaveRegistration()
+	}
+
+	logrus.Info("Done!")
 }

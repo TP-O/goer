@@ -4,7 +4,7 @@ During course registration, the Edusoft server is overloaded. As a result, reque
 
 ## Install
 
-Which file should you [download](https://github.com/hcmiu-project/goer/releases)?
+Which file should you [download](https://github.com/TP-O/goer/releases)?
 - Linux: goer
 - Windows: goer.exe
 - MacOS: mgoer
