@@ -18,6 +18,7 @@ type Options struct {
 }
 
 func RunCLI() *Options {
+	shouldExit := true
 	options := &Options{}
 	app := &cli.App{
 		Name:    "goer",
@@ -88,6 +89,7 @@ func RunCLI() *Options {
 		},
 		Action: func(ctx *cli.Context) error {
 			options.CourseIDs = ctx.StringSlice("course-id")
+			shouldExit = false
 
 			return nil
 		},
@@ -95,6 +97,10 @@ func RunCLI() *Options {
 
 	if err := app.Run(os.Args); err != nil {
 		logrus.Fatal(err)
+	}
+
+	if shouldExit {
+		os.Exit(0)
 	}
 
 	return options
