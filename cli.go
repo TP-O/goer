@@ -57,7 +57,6 @@ func RunCLI() *Options {
 				Name:        "spam",
 				Aliases:     []string{"s"},
 				Usage:       "Repeat the registrations every `TIME` seconds",
-				Value:       5,
 				Destination: &options.SpamInterval,
 				Action: func(ctx *cli.Context, u uint64) error {
 					if u < 1 {
