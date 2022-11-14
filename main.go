@@ -22,7 +22,7 @@ func main() {
 		ID:       options.ID,
 		Password: options.Password,
 	}
-	goer := NewGoer(options.Origin)
+	goer := NewGoer(options.Origin, NewGoerClient())
 
 	logrus.Warn("=======================================================")
 	logrus.Warn("DO NOT ACCESS YOUR ACCOUNT WHEN THIS TOOL IS RUNNING!!!")

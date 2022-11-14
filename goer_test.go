@@ -1,208 +1,198 @@
 package main
 
-// import (
-// 	"bytes"
-// 	"errors"
-// 	"io"
-// 	"net/http"
-// 	"net/http/cookiejar"
-// 	"strings"
-// 	"testing"
+import (
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/mock"
-// )
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/tp-o/goer/mock"
+)
 
-// type PayloadGeneratorMock struct {
-// 	mock.Mock
-// }
+func TestNewGoer(t *testing.T) {
+	origin := "http://google.com/"
+	client := NewGoerClient()
+	goer := NewGoer(origin, client)
 
-// func (p *PayloadGeneratorMock) LoginPayload() Payload {
-// 	args := p.Called()
+	assert.NotNil(t, goer)
+	assert.Equal(t, origin, goer.Origin)
+	assert.Equal(t, client, goer.Client)
+}
 
-// 	return args.Get(0).(Payload)
-// }
+func TestGoerLogin(t *testing.T) {
+	origin := "http://google.com/"
+	credentials := &Credentials{}
+	failedHeader := http.Header{}
+	failedHeader.Add("Location", "sessionreuse")
+	successfulHeader := http.Header{}
+	successfulHeader.Add("Location", "/")
 
-// func (p *PayloadGeneratorMock) RegistrationPayload(id string) (Payload, string) {
-// 	args := p.Called(id)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	return args.Get(0).(Payload), args.String(1)
-// }
+	mockClient := mock.NewMockIGoerClient(ctrl)
+	//================================================
+	goer := NewGoer(origin, mockClient)
 
-// func (p *PayloadGeneratorMock) SavePayload() Payload {
-// 	args := p.Called()
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(nil, errors.New("Test error"))
+	assert.False(t, goer.Login(credentials))
 
-// 	return args.Get(0).(Payload)
-// }
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			StatusCode: 200,
+		}, nil)
+	assert.False(t, goer.Login(credentials))
 
-// type HttpMock struct {
-// 	mock.Mock
-// }
+	mockClient.EXPECT().Do(gomock.Any()).
+		Return(&http.Response{
+			Header: failedHeader,
+		}, nil)
+	assert.False(t, goer.Login(credentials))
 
-// func (h *HttpMock) GetClient() *http.Client {
-// 	args := h.Called()
+	mockClient.EXPECT().Do(gomock.Any()).
+		Return(&http.Response{
+			StatusCode: 302,
+			Header:     successfulHeader,
+		}, nil)
+	assert.True(t, goer.Login(credentials))
+}
 
-// 	return args.Get(0).(*http.Client)
-// }
+func TestGoerClear(t *testing.T) {
+	origin := "http://google.com/"
 
-// func (h *HttpMock) Do(req *http.Request) (*http.Response, error) {
-// 	args := h.Called(req)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	return args.Get(0).(*http.Response), args.Error(1)
-// }
+	mockClient := mock.NewMockIGoerClient(ctrl)
+	//================================================
+	goer := NewGoer(origin, mockClient)
 
-// // Init mocks
-// var httpMock = HttpMock{}
-// var payloadGeneratorMock = PayloadGeneratorMock{}
+	mockClient.
+		EXPECT().
+		DeleteSessionId(gomock.Eq(origin)).
+		Return(errors.New("Test error"))
+	assert.False(t, goer.Clear())
 
-// // Instance
-// var client = Client{
-// 	Host:             "https://mock.com",
-// 	Http:             &httpMock,
-// 	PayloadGenerator: &payloadGeneratorMock,
-// }
+	mockClient.
+		EXPECT().
+		DeleteSessionId(gomock.Eq(origin)).
+		Return(nil)
+	assert.True(t, goer.Clear())
+}
 
-// // Cookie
-// var jar, _ = cookiejar.New(nil)
+func TestGoerGreet(t *testing.T) {
+	//
+}
 
-// func TestLogin(t *testing.T) {
-// 	payload := Payload{
-// 		Type: "xx",
-// 		Body: &bytes.Buffer{},
-// 	}
+func TestGoerIsRegistrationOpen(t *testing.T) {
+	origin := "http://google.com/"
 
-// 	payloadGeneratorMock.On("LoginPayload").Return(payload)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	assert.NotEmpty(t, client)
+	mockClient := mock.NewMockIGoerClient(ctrl)
+	//================================================
+	goer := NewGoer(origin, mockClient)
 
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		StatusCode: 302,
-// 		Header: map[string][]string{
-// 			"Location": {""},
-// 		},
-// 	}, nil).Once()
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(nil, errors.New("Test error"))
+	assert.False(t, goer.IsRegistrationOpen())
 
-// 	ok, _ := client.Login()
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader(
+				"<p id=\"" +
+					strings.Replace(CourseAlertSelector, "#", "", 1) +
+					"\">Alert message</p>",
+			)),
+		}, nil)
+	assert.False(t, goer.IsRegistrationOpen())
 
-// 	assert.True(t, ok)
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader("<p></p>")),
+		}, nil)
+	assert.True(t, goer.IsRegistrationOpen())
+}
 
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		StatusCode: 302,
-// 		Header: map[string][]string{
-// 			"Location": {"sessionreuse"},
-// 		},
-// 	}, nil).Once()
+func TestRegisterCourse(t *testing.T) {
+	origin := "http://google.com/"
+	courseID := "IT093IU02  01|IT093IU|Web Application Development|02|4|0|01/01/0001|0|0|0| |0|ITIT19CS31"
+	coruseName := strings.Split(courseID, "|")[2]
 
-// 	ok, _ = client.Login()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	assert.False(t, ok)
+	mockClient := mock.NewMockIGoerClient(ctrl)
+	//================================================
+	goer := NewGoer(origin, mockClient)
 
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		StatusCode: 200,
-// 		Header: map[string][]string{
-// 			"Location": {},
-// 		},
-// 	}, nil).Once()
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(nil, errors.New("Test error"))
+	assert.False(t, goer.RegisterCourse(courseID))
 
-// 	ok, _ = client.Login()
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader("Response ncc")),
+		}, nil)
+	assert.False(t, goer.RegisterCourse(courseID))
 
-// 	assert.False(t, ok)
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader("{" + coruseName + "}")),
+		}, nil)
+	assert.True(t, goer.RegisterCourse(courseID))
+}
 
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
+func TestSaveRegistration(t *testing.T) {
+	origin := "http://google.com/"
 
-// 	ok, _ = client.Login()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	assert.False(t, ok)
-// }
+	mockClient := mock.NewMockIGoerClient(ctrl)
+	//================================================
+	goer := NewGoer(origin, mockClient)
 
-// func TestReset(t *testing.T) {
-// 	//
-// }
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(nil, errors.New("Test error"))
+	assert.False(t, goer.SaveRegistration())
 
-// func TestIsReady(t *testing.T) {
-// 	//
-// }
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader("Response ncc")),
+		}, nil)
+	assert.False(t, goer.SaveRegistration())
 
-// func TestRegister(t *testing.T) {
-// 	ID := "MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|"
-
-// 	payload := Payload{
-// 		Type: "xx",
-// 		Body: &bytes.Buffer{},
-// 	}
-
-// 	payloadGeneratorMock.On("RegistrationPayload", ID).Return(payload, "TenMH")
-
-// 	assert.NotEmpty(t, client)
-
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		Body: io.NopCloser(strings.NewReader("TenMH")),
-// 	}, nil).Once()
-
-// 	ok, message := client.Register(ID)
-
-// 	assert.True(t, ok)
-// 	assert.NotEmpty(t, message)
-
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		Body: io.NopCloser(strings.NewReader("")),
-// 	}, nil).Once()
-
-// 	ok, message = client.Register(ID)
-
-// 	assert.False(t, ok)
-// 	assert.NotEmpty(t, message)
-
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
-
-// 	ok, message = client.Register(ID)
-
-// 	assert.False(t, ok)
-// 	assert.NotEmpty(t, message)
-// }
-
-// func TestSave(t *testing.T) {
-// 	payload := Payload{
-// 		Type: "xx",
-// 		Body: &bytes.Buffer{},
-// 	}
-
-// 	payloadGeneratorMock.On("SavePayload").Return(payload)
-
-// 	assert.NotEmpty(t, client)
-
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		Body: io.NopCloser(strings.NewReader("||default.aspx?page=dkmonhoc")),
-// 	}, nil).Once()
-
-// 	ok, message := client.Save()
-
-// 	assert.True(t, ok)
-// 	assert.NotEmpty(t, message)
-
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-// 		Body: io.NopCloser(strings.NewReader("")),
-// 	}, nil).Once()
-
-// 	ok, message = client.Save()
-
-// 	assert.False(t, ok)
-// 	assert.NotEmpty(t, message)
-
-// 	/* ============================= */
-// 	httpMock.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("Error")).Once()
-
-// 	ok, message = client.Save()
-
-// 	assert.False(t, ok)
-// 	assert.NotEmpty(t, message)
-// }
+	mockClient.
+		EXPECT().
+		Do(gomock.Any()).
+		Return(&http.Response{
+			Body: io.NopCloser(strings.NewReader("||default.aspx?page=dkmonhoc")),
+		}, nil)
+	assert.True(t, goer.SaveRegistration())
+}

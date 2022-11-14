@@ -64,21 +64,21 @@ func GenerateLoginPayload(credentials *Credentials) Payload {
 }
 
 func GenerateRegisterCoursePayload(courseId string) Payload {
-	extractedProperties := strings.Split(courseId, "|")
+	extractedCourseInfo := strings.Split(courseId, "|")
 	body := RegisterCourseBody{
 		IsValidCoso:          false,
 		IsValidTKB:           false,
-		MaDK:                 extractedProperties[0],
-		MaMH:                 extractedProperties[1],
-		Sotc:                 extractedProperties[4],
-		TenMH:                extractedProperties[2],
-		MaNh:                 extractedProperties[3],
+		MaDK:                 extractedCourseInfo[0],
+		MaMH:                 extractedCourseInfo[1],
+		Sotc:                 extractedCourseInfo[4],
+		TenMH:                extractedCourseInfo[2],
+		MaNh:                 extractedCourseInfo[3],
 		StrsoTCHP:            "0",
 		IsCheck:              "true",
-		OldMaDK:              extractedProperties[10],
-		StrngayThi:           extractedProperties[6],
-		TietBD:               extractedProperties[8],
-		SoTiet:               extractedProperties[9],
+		OldMaDK:              extractedCourseInfo[10],
+		StrngayThi:           extractedCourseInfo[6],
+		TietBD:               extractedCourseInfo[8],
+		SoTiet:               extractedCourseInfo[9],
 		IsMHDangKyCungKhoiSV: "0",
 	}
 	jsonBody, _ := json.Marshal(body)

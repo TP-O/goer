@@ -1,45 +1,67 @@
 package main
 
-// import (
-// 	"strings"
-// 	"testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestLoginInPayload(t *testing.T) {
-// 	payloadGenerator := PayloadGenerator{
-// 		credentials: Credentials{
-// 			ID:       "ITITIU19180",
-// 			Password: "Mypassword",
-// 		},
-// 	}
-// 	payload := payloadGenerator.LoginPayload()
+func TestGenerateMultipartFormPayload(t *testing.T) {
+	fields := map[string]string{
+		"F1": "V1",
+		"F2": "V2",
+	}
+	payload := GenerateMultipartFormPayload(fields)
+	body := payload.Body.String()
 
-// 	assert.True(t, strings.HasPrefix(payload.Type, "multipart/form-data; boundary="))
-// 	assert.Contains(t, payload.Body.String(), "name=\"__EVENTTARGET\"")
-// 	assert.Contains(t, payload.Body.String(), "name=\"__EVENTARGUMENT\"")
-// 	assert.Contains(t, payload.Body.String(), "name=\"ctl00$ContentPlaceHolder1$ctl00$ucDangNhap$txtTaiKhoa\"")
-// 	assert.Contains(t, payload.Body.String(), "name=\"ctl00$ContentPlaceHolder1$ctl00$ucDangNhap$txtMatKhau\"")
-// 	assert.Contains(t, payload.Body.String(), "name=\"ctl00$ContentPlaceHolder1$ctl00$ucDangNhap$btnDangNhap\"")
-// 	assert.Contains(t, payload.Body.String(), payloadGenerator.credentials.ID)
-// 	assert.Contains(t, payload.Body.String(), payloadGenerator.credentials.Password)
-// }
+	assert.True(t, strings.HasPrefix(payload.Type, "multipart/form-data; boundary="))
 
-// func TestRegistrationPayload(t *testing.T) {
-// 	payloadGenerator := PayloadGenerator{}
-// 	payload, course := payloadGenerator.RegistrationPayload("MaDK|MaMH|TenMH|MaNh|Sotc||StrngayThi||TietBD|SoTiet|")
+	for key, val := range fields {
+		assert.Contains(t, body, "name=\""+key+"\"")
+		assert.Contains(t, body, val)
+	}
+}
 
-// 	assert.Equal(t, course, "TenMH")
-// 	assert.Equal(t, payload.Type, "text/plain; charset=utf-8")
-// 	assert.NotEmpty(t, payload.Body)
-// }
+func TestGenerateLoginPayload(t *testing.T) {
+	credentials := &Credentials{
+		ID:       "ITITIU19180",
+		Password: "Mypassword",
+	}
+	payload := GenerateLoginPayload(credentials)
+	body := payload.Body.String()
 
-// func TestSavePayload(t *testing.T) {
-// 	payloadGenerator := PayloadGenerator{}
-// 	payload := payloadGenerator.SavePayload()
+	assert.Contains(t, body, "name=\""+IDInputName+"\"")
+	assert.Contains(t, body, "name=\""+PasswordInputName+"\"")
+	assert.Contains(t, body, "name=\""+LoginActionInputName+"\"")
+	assert.Contains(t, body, credentials.ID)
+	assert.Contains(t, body, credentials.Password)
+}
 
-// 	assert.Equal(t, payload.Type, "text/plain; charset=utf-8")
-// 	assert.Contains(t, payload.Body.String(), "\"isCheckSongHanh\": false")
-// 	assert.Contains(t, payload.Body.String(), "\"ChiaHP\": false")
-// }
+func TestGenerateRegisterCoursePayload(t *testing.T) {
+	courseID := "IT093IU02  01|IT093IU|Web Application Development|02|4|0|01/01/0001|0|0|0| |0|ITIT19CS31"
+	extractedCourseInfo := strings.Split(courseID, "|")
+	payload := GenerateRegisterCoursePayload(courseID)
+	var body RegisterCourseBody
+	json.Unmarshal(payload.Body.Bytes(), &body)
+
+	assert.Equal(t, payload.Type, "text/plain; charset=utf-8")
+	assert.Equal(t, body.MaDK, extractedCourseInfo[0])
+	assert.Equal(t, body.MaMH, extractedCourseInfo[1])
+	assert.Equal(t, body.TenMH, extractedCourseInfo[2])
+	assert.Equal(t, body.MaNh, extractedCourseInfo[3])
+	assert.Equal(t, body.Sotc, extractedCourseInfo[4])
+	assert.Equal(t, body.StrngayThi, extractedCourseInfo[6])
+	assert.Equal(t, body.SoTiet, extractedCourseInfo[8])
+	assert.Equal(t, body.SoTiet, extractedCourseInfo[9])
+	assert.Equal(t, body.OldMaDK, extractedCourseInfo[10])
+}
+
+func TestGenerateCourseSavePayload(t *testing.T) {
+	payload := GenerateCourseSavePayload()
+	body := payload.Body.String()
+
+	assert.Equal(t, payload.Type, "text/plain; charset=utf-8")
+	assert.NotEmpty(t, body)
+}

@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"
@@ -15,27 +12,13 @@ import (
 
 type Goer struct {
 	Origin string
-	Http   *http.Client
+	Client IGoerClient
 }
 
-func NewGoer(origin string) *Goer {
-	var httpClient *http.Client
-
-	if jar, err := cookiejar.New(nil); err != nil {
-		panic(SystemFailureMessage + err.Error())
-	} else {
-		httpClient = &http.Client{
-			Jar:     jar,
-			Timeout: 60 * time.Second,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		}
-	}
-
+func NewGoer(origin string, client IGoerClient) *Goer {
 	return &Goer{
-		Origin: origin,
-		Http:   httpClient,
+		origin,
+		client,
 	}
 }
 
@@ -44,7 +27,7 @@ func (g *Goer) Login(credentials *Credentials) bool {
 	req, _ := http.NewRequest("POST", g.Origin+LoginPath, payload.Body)
 	req.Header.Add("Content-Type", payload.Type)
 
-	if res, err := g.Http.Do(req); err != nil {
+	if res, err := g.Client.Do(req); err != nil {
 		logrus.Warn(SystemFailureMessage + err.Error())
 		return false
 	} else if res.StatusCode != 302 ||
@@ -59,27 +42,19 @@ func (g *Goer) Login(credentials *Credentials) bool {
 }
 
 func (g *Goer) Clear() bool {
-	if url, err := url.Parse(g.Origin); err == nil {
-		g.Http.Jar.SetCookies(url, []*http.Cookie{
-			{
-				Name:     SessionIDCookieField,
-				Value:    "",
-				HttpOnly: true,
-			},
-		})
-
-		logrus.Info(LogoutSuccessMessage)
-		return true
+	if err := g.Client.DeleteSessionId(g.Origin); err != nil {
+		logrus.Warn(LogoutFailureMessage)
+		return false
 	}
 
-	logrus.Warn(LogoutFailureMessage)
-	return false
+	logrus.Info(LogoutSuccessMessage)
+	return true
 }
 
 func (g *Goer) Greet() {
 	req, _ := http.NewRequest("GET", g.Origin+HomePath, nil)
 
-	if res, err := g.Http.Do(req); err != nil {
+	if res, err := g.Client.Do(req); err != nil {
 		logrus.Fatalf(SystemFailureMessage + err.Error())
 	} else {
 		document, _ := goquery.NewDocumentFromReader(res.Body)
@@ -90,7 +65,7 @@ func (g *Goer) Greet() {
 func (g *Goer) IsRegistrationOpen() bool {
 	req, _ := http.NewRequest("GET", g.Origin+CourseListPath, nil)
 
-	if res, err := g.Http.Do(req); err != nil {
+	if res, err := g.Client.Do(req); err != nil {
 		logrus.Warn(SystemFailureMessage + err.Error())
 		return false
 	} else {
@@ -113,7 +88,7 @@ func (g *Goer) RegisterCourse(courseId string) bool {
 	req.Header.Add("Content-Type", payload.Type)
 	req.Header.Add("X-AjaxPro-Method", RegisterCourseAjaxMethod)
 
-	if res, err := g.Http.Do(req); err != nil {
+	if res, err := g.Client.Do(req); err != nil {
 		logrus.Warn(SystemFailureMessage + err.Error())
 		return false
 	} else {
@@ -135,7 +110,7 @@ func (g *Goer) SaveRegistration() bool {
 	req.Header.Add("Content-Type", payload.Type)
 	req.Header.Add("X-AjaxPro-Method", SaveCourseAjaxMethod)
 
-	if res, err := g.Http.Do(req); err != nil {
+	if res, err := g.Client.Do(req); err != nil {
 		logrus.Warn(SystemFailureMessage + err.Error())
 		return false
 	} else {
