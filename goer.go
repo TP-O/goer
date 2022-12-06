@@ -11,14 +11,16 @@ import (
 )
 
 type Goer struct {
-	Origin string
-	Client IGoerClient
+	Origin            string
+	Client            IGoerClient
+	RegisteredCourses []string
 }
 
 func NewGoer(origin string, client IGoerClient) *Goer {
 	return &Goer{
 		origin,
 		client,
+		make([]string, 0),
 	}
 }
 
@@ -95,6 +97,8 @@ func (g *Goer) RegisterCourse(courseId string) bool {
 		resBody, _ := io.ReadAll(res.Body)
 
 		if bytes.Contains(resBody, []byte(courseName)) {
+			g.RegisteredCourses = append(g.RegisteredCourses, courseName)
+
 			logrus.Info(RegistrationSuccessMessage + "[" + courseName + "]")
 			return true
 		}
@@ -117,7 +121,7 @@ func (g *Goer) SaveRegistration() bool {
 		resBody, _ := io.ReadAll(res.Body)
 
 		if bytes.Contains(resBody, []byte("||default.aspx?page=dkmonhoc")) {
-			logrus.Info(SaveSuccessMessage)
+			logrus.Info(SaveSuccessMessage, "[", strings.Join(g.RegisteredCourses, ", "), "]")
 			return true
 		}
 

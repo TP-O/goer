@@ -3,14 +3,23 @@ package main
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/tp-o/goer/mock"
 )
+
+func TestMain(m *testing.M) {
+	logrus.SetOutput(ioutil.Discard)
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestNewGoer(t *testing.T) {
 	origin := "http://google.com/"
@@ -146,6 +155,7 @@ func TestRegisterCourse(t *testing.T) {
 		Do(gomock.Any()).
 		Return(nil, errors.New("Test error"))
 	assert.False(t, goer.RegisterCourse(courseID))
+	assert.NotContains(t, goer.RegisteredCourses, coruseName)
 
 	mockClient.
 		EXPECT().
@@ -154,6 +164,7 @@ func TestRegisterCourse(t *testing.T) {
 			Body: io.NopCloser(strings.NewReader("Response ncc")),
 		}, nil)
 	assert.False(t, goer.RegisterCourse(courseID))
+	assert.NotContains(t, goer.RegisteredCourses, coruseName)
 
 	mockClient.
 		EXPECT().
@@ -162,6 +173,7 @@ func TestRegisterCourse(t *testing.T) {
 			Body: io.NopCloser(strings.NewReader("{" + coruseName + "}")),
 		}, nil)
 	assert.True(t, goer.RegisterCourse(courseID))
+	assert.Contains(t, goer.RegisteredCourses, coruseName)
 }
 
 func TestSaveRegistration(t *testing.T) {

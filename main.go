@@ -57,10 +57,9 @@ func main() {
 	}()
 
 	for i := 0; i < int(options.Workers); i++ {
-		go func() {
-			wg.Add(1)
-			defer wg.Done()
+		wg.Add(1)
 
+		go func() {
 			for courseID := range courseIDChannel {
 				if ok := goer.RegisterCourse(courseID); !ok {
 					courseIDChannel <- courseID
@@ -88,6 +87,8 @@ func main() {
 					}
 				}
 			}
+
+			wg.Done()
 		}()
 	}
 

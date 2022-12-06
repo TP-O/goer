@@ -23,7 +23,7 @@ func RunCLI() *Options {
 	app := &cli.App{
 		Name:    "goer",
 		Usage:   "A simple tool to help students enroll in their courses on the Edusoft website",
-		Version: "2.0.0",
+		Version: "2.0.2",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "id",
@@ -81,9 +81,10 @@ func RunCLI() *Options {
 				},
 			},
 			&cli.StringSliceFlag{
-				Name:    "course-id",
-				Aliases: []string{"I"},
-				Usage:   "ID of registered course",
+				Name:     "course-id",
+				Aliases:  []string{"I"},
+				Required: true,
+				Usage:    "ID of registered course",
 			},
 		},
 		Action: func(ctx *cli.Context) error {
