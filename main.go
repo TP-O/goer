@@ -29,7 +29,7 @@ func main() {
 	logrus.Warn("=======================================================")
 
 	// Try to log in again until the registration is ready
-	for true {
+	for {
 		if ok := goer.Login(credentials); ok {
 			// goer.Greet()
 

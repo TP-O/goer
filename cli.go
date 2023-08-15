@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -88,9 +90,18 @@ func RunCLI() *Options {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			options.CourseIDs = ctx.StringSlice("course-id")
-			shouldExit = false
+			// Fix: https://github.com/TP-O/goer/issues/1
+			courseIDs := ctx.StringSlice("course-id")
+			for i := 0; i < len(courseIDs); i++ {
+				if len(strings.Split(courseIDs[i], "|")) < 10 && i < len(courseIDs[i])-1 {
+					options.CourseIDs = append(options.CourseIDs, fmt.Sprintf("%s, %s", courseIDs[i], courseIDs[i+1]))
+					i++
+				} else {
+					options.CourseIDs = append(options.CourseIDs, courseIDs[i])
+				}
+			}
 
+			shouldExit = false
 			return nil
 		},
 	}
