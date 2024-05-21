@@ -14,7 +14,7 @@ const (
 
 const (
 	UserGreetingSelector = "#ctl00_Header1_Logout1_lblNguoiDung"
-	CourseAlertSelector  = "#ctl00_ContentPlaceHolder1_ctl00_lblThongBaoNgoaiTGDK"
+	CourseAlertSelector  = "#ContentPlaceHolder1_ctl00_lblThongBaoNgoaiTGDK"
 )
 
 const (
